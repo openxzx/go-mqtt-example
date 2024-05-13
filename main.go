@@ -22,6 +22,11 @@ const (
     EXEC_CMD_ARGS = "-a"
 )
 
+func on_connect(client mqtt.Client) {
+    fmt.Println("Conneted MQTT Service.")
+    fmt.Printf("\033[1;32mMessages waiting...\033[0m\n")
+}
+
 // Define message handler
 func message_handler(client mqtt.Client, msg mqtt.Message) {
     fmt.Printf("Upload payload: %s\n", msg.Payload())
@@ -48,9 +53,9 @@ func listen(client mqtt.Client) {
 func main() {
     // Create Mqtt client options
     opts := mqtt.NewClientOptions().AddBroker(MQTT_URL)
-    client := mqtt.NewClient(opts)
+    opts.OnConnect = on_connect
 
-    // Connect service
+    client := mqtt.NewClient(opts)
     if token := client.Connect(); token.Wait() && token.Error() != nil {
         panic(token.Error())
     }
@@ -60,7 +65,6 @@ func main() {
     signal.Notify(sig_chan, os.Interrupt)
 
     go listen(client)
-    fmt.Printf("\033[1;32mMessages waiting...\033[0m\n")
 
     // Waiting interrupt signal
     <-sig_chan
