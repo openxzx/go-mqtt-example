@@ -2,12 +2,9 @@ package main
 
 import (
     "fmt"
-    "strings"
     "os"
     "os/signal"
-    "os/exec"
     "time"
-
     "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -15,11 +12,6 @@ const (
     MQTT_URL = "tcp://localhost:1883"
     MQTT_TOPIC_UPLINK = "topic/uplink"
     MQTT_TOPIC_DOWNLINK = "topic/downlink"
-)
-
-const (
-    EXEC_CMD = "uname"
-    EXEC_CMD_ARGS = "-a"
 )
 
 func onConnect(client mqtt.Client) {
@@ -31,16 +23,15 @@ func onConnect(client mqtt.Client) {
 func messageHandler(client mqtt.Client, msg mqtt.Message) {
     fmt.Printf("Upload payload: %s\n", msg.Payload())
 
-    // Reply download message
-    out, err := exec.Command(EXEC_CMD, EXEC_CMD_ARGS).Output()
-    if err != nil {
-        token := client.Publish(MQTT_TOPIC_DOWNLINK, 0, true, err)
+    // Ctrl Led and reply download message
+    ret := CtrlRGB(string(msg.Payload()))
+    if ret == 0 {
+        token := client.Publish(MQTT_TOPIC_DOWNLINK, 0, true, "Yes")
         token.Wait()
     } else {
-	    token := client.Publish(MQTT_TOPIC_DOWNLINK, 0, true, strings.TrimSpace(string(out)))
+        token := client.Publish(MQTT_TOPIC_DOWNLINK, 0, true, "No")
         token.Wait()
     }
-    // TODO: It can also realize the control on hardware.
 }
 
 func listen(client mqtt.Client) {
@@ -69,9 +60,6 @@ func main() {
     // Waiting interrupt signal
     <-sig_chan
 
-    token := client.Publish(MQTT_TOPIC_DOWNLINK, 0, true, "")
-    token.Wait()
-
     fmt.Printf("\n\033[1;33mReceived interrupt signal and disconnecting...\033[0m\n")
-    client.Disconnect(250)
+    client.Disconnect(300)
 }
