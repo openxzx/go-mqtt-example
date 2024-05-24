@@ -22,13 +22,13 @@ const (
     EXEC_CMD_ARGS = "-a"
 )
 
-func on_connect(client mqtt.Client) {
+func onConnect(client mqtt.Client) {
     fmt.Println("Conneted MQTT Service.")
     fmt.Printf("\033[1;32mMessages waiting...\033[0m\n")
 }
 
 // Define message handler
-func message_handler(client mqtt.Client, msg mqtt.Message) {
+func messageHandler(client mqtt.Client, msg mqtt.Message) {
     fmt.Printf("Upload payload: %s\n", msg.Payload())
 
     // Reply download message
@@ -44,7 +44,7 @@ func message_handler(client mqtt.Client, msg mqtt.Message) {
 }
 
 func listen(client mqtt.Client) {
-    if token := client.Subscribe(MQTT_TOPIC_UPLINK, 1, message_handler); token.Wait() && token.Error() != nil {
+    if token := client.Subscribe(MQTT_TOPIC_UPLINK, 1, messageHandler); token.Wait() && token.Error() != nil {
         panic(token.Error())
     }
     time.Sleep(100 * time.Millisecond)
@@ -53,14 +53,14 @@ func listen(client mqtt.Client) {
 func main() {
     // Create Mqtt client options
     opts := mqtt.NewClientOptions().AddBroker(MQTT_URL)
-    opts.OnConnect = on_connect
+    opts.OnConnect = onConnect
 
     client := mqtt.NewClient(opts)
     if token := client.Connect(); token.Wait() && token.Error() != nil {
         panic(token.Error())
     }
 
-    // Create signal recieiver for safe closing connection
+    // Create pipe type signal recieiver for safe closing connection
     sig_chan := make(chan os.Signal, 1)
     signal.Notify(sig_chan, os.Interrupt)
 
